@@ -1,0 +1,8 @@
+export const WELCOME = 'WELCOME'
+export const SET_GOAL_NUMBER = 'SET_GOAL_NUMBER'
+export const SET_Y_NUMBER = 'SET_Y_NUMBER'
+export const SET_N_NUMBER = 'SET_N_NUMBER'
+export const SET_TIMES = 'SET_TIMES'
+export const SET_HISTORY = 'SET_HISTORY'
+export const SET_LEVEL = 'SET_LEVEL'
+export const SET_COMPLEXITY = 'SET_COMPLEXITY'
