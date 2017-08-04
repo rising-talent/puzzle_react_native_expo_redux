@@ -9,6 +9,7 @@ import {
 import Login from './login'
 import Home from './home'
 import Setting from './setting'
+import TrophyList from './trophies'
 
 const AppNavigator = StackNavigator({
   login: {
@@ -29,4 +30,15 @@ const AppNavigator = StackNavigator({
   headerMode: 'none',
 });
 
-export default AppNavigator;
+const MainNavigator = StackNavigator(
+  {
+    mainnavigator: { screen: AppNavigator },
+    trophylist: { screen: TrophyList },
+  },
+  {
+    mode: 'modal',
+    headerMode: 'none',
+  },
+);
+
+export default MainNavigator;

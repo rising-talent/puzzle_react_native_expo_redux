@@ -34,7 +34,7 @@ class Home extends React.Component {
             const email = username + '@litiyan.com'
             const pwd = 'passwordof' + username
             let user = await firebase.auth()
-                .createUserWithEmailAndPassword(email, pwd);            
+                .createUserWithEmailAndPassword(email, pwd);     
 
             this.props.updateUserTrophy(user.uid, username, this.getTrophy(left), (res) => {
                 let userData = {
@@ -43,7 +43,7 @@ class Home extends React.Component {
                     trophy: _this.getTrophy(left)
                 }
                 _this.props.saveStorage('account', userData, (res) => {
-                    _this.setState({isRegistering: false})                
+                    _this.setState({isRegistering: false})
                 })
 
                 _this.props.setUserInfo(userData)
@@ -69,7 +69,6 @@ class Home extends React.Component {
                 trophy: n_trophy
             }
             _this.props.saveStorage('account', userData, (res) => {
-                _this.setState({isReceiving: false})                
             })
 
             _this.props.setUserInfo(userData)

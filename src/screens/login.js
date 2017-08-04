@@ -5,7 +5,7 @@ import { bindActionCreators } from 'redux'
 import { ActionCreators } from '../redux/actions'
 import { NavigationActions } from 'react-navigation';
 import Button from 'apsl-react-native-button';
-import {Ionicons, SimpleLineIcons} from '@expo/vector-icons';
+import {SimpleLineIcons} from '@expo/vector-icons';
 import NavigationBar from 'react-native-navbar';
 import {Font} from 'expo'
 import { setCustomText } from 'react-native-global-props';
@@ -80,6 +80,10 @@ class Login extends React.Component {
     onChanged(data) {
         this.props.resetGoalNumber(data.level, data.isComplex)     
     }
+
+    showTrophyList() {
+        this.props.navigation.navigate('trophylist', {})
+    }
     
     render() {
         const titleButtonConfig = (
@@ -93,15 +97,15 @@ class Login extends React.Component {
             </TouchableOpacity>
         )
         const leftButtonConfig = (
-            <View style={styles.leftNav}>
+            <TouchableOpacity onPress={() => this.showTrophyList()} style={styles.leftNav}>
                 <SimpleLineIcons name='trophy' size={25} style={{ color: 'white'}} />
                 <Text style={styles.trophyText}>{this.props.trophy}</Text>
-            </View>
+            </TouchableOpacity>
         )
         if(this.state.num.length == this.props.level) dismissKeyboard()
         return (
             <View style={{flex: 1}}>
-                <Spinner visible = {this.state.isLoading && this.state.fontLoaded} textContent="" textStyle={{color: '#111'}} /> 
+                <Spinner visible = {this.state.isLoading || !this.state.fontLoaded} textContent="" textStyle={{color: '#111'}} /> 
                 <NavigationBar
                     style = {styles.navBar}
                     title = {titleButtonConfig}

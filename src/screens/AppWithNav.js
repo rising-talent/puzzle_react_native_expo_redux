@@ -8,12 +8,12 @@ import {
 import { bindActionCreators } from 'redux'
 import { ActionCreators } from '../redux/actions'
 import { connect } from 'react-redux'
-import AppNavigator from './AppNavigator'
+import MainNavigator from './AppNavigator'
 
 class AppWithNav extends React.Component {
   render() {
     return (
-      <AppNavigator/>
+      <MainNavigator/>
     );
   }
 }
