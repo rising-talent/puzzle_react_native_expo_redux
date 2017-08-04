@@ -46,21 +46,17 @@ class Setting extends React.Component {
     }
 
     saveSettings() {
+        const _this = this
         this.props.setLevel(this.state.level)
         this.props.setComplexity(this.state.complexity)  
-        storage.save({
-            key: 'setting',   // Note: Do not use underscore("_") in key! 
-            data: {
-                level: this.state.level,
-                complexity: this.state.complexity
-            },
-            
-            // if not specified, the defaultExpires will be applied instead. 
-            // if set to null, then it will never expire. 
-            expires: null
-        }); 
-        this.props.navigation.goBack()
-        this.props.navigation.state.params.onChanged({level: this.state.level, isComplex: this.state.complexity});
+        let data = {
+            level: this.state.level,
+            complexity: this.state.complexity
+        }
+        this.props.saveStorage('setting', data, (res) => {
+            this.props.navigation.goBack()
+            this.props.navigation.state.params.onChanged({level: this.state.level, isComplex: this.state.complexity});
+        })        
     }
     
     render() {

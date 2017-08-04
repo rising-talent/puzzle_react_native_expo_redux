@@ -1,4 +1,7 @@
 export const WELCOME = 'WELCOME'
+export const USER_ID = 'USER_ID'
+export const USER_NAME = 'USER_NAME'
+export const USER_TROPHY = 'USER_TROPHY'
 export const SET_GOAL_NUMBER = 'SET_GOAL_NUMBER'
 export const SET_Y_NUMBER = 'SET_Y_NUMBER'
 export const SET_N_NUMBER = 'SET_N_NUMBER'

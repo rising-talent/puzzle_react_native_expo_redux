@@ -1,27 +1,92 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, TouchableWithoutFeedback, ListView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, TouchableWithoutFeedback, ListView, TextInput, ScrollView } from 'react-native';
 import { connect } from 'react-redux'
 import { bindActionCreators } from 'redux'
 import { ActionCreators } from '../redux/actions'
 import NavigationBar from 'react-native-navbar';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, SimpleLineIcons } from '@expo/vector-icons';
 import Button from 'apsl-react-native-button';
-const notifyText = ['Not good', 'Good', 'Excellent', 'Great', 'Awesome', 'Wonderful']
+import * as firebase from "firebase";
+import * as Global from '../libs/constants'
+import { KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view'
+
 const dismissKeyboard = require('dismissKeyboard')
 var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+
 class Home extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
+            register: false,
+            username: ''
         }
     }
 
     componentDidMount() {
         dismissKeyboard()
     }
+
+    async onRegister(left) {
+        const _this = this
+        const {username} = this.state
+        try {
+            this.setState({isRegistering: true})
+            const email = username + '@litiyan.com'
+            const pwd = 'passwordof' + username
+            let user = await firebase.auth()
+                .createUserWithEmailAndPassword(email, pwd);            
+
+            this.props.updateUserTrophy(user.uid, username, this.getTrophy(left), (res) => {
+                let userData = {
+                    userId: user.uid, 
+                    username: username, 
+                    trophy: _this.getTrophy(left)
+                }
+                _this.props.saveStorage('account', userData, (res) => {
+                    _this.setState({isRegistering: false})                
+                })
+
+                _this.props.setUserInfo(userData)
+                _this.props.navigation.goBack()
+                _this.props.navigation.state.params.onRestart({isSuccess: true});
+            })
+        } catch (error) {
+            _this.setState({isRegistering: false}) 
+            alert(JSON.stringify(error))
+        }
+    }
+
+    onReceiveTrophy(left) {
+        const _this = this
+        const {userId, username, trophy} = this.props
+        const n_trophy = trophy + this.getTrophy(left)
+        this.setState({isReceiving: true})
+        this.props.updateUserTrophy(userId, username, n_trophy, (res) => {
+            _this.setState({isReceiving: false})
+            let userData = {
+                userId: userId, 
+                username: username, 
+                trophy: n_trophy
+            }
+            _this.props.saveStorage('account', userData, (res) => {
+                _this.setState({isReceiving: false})                
+            })
+
+            _this.props.setUserInfo(userData)
+            _this.props.navigation.goBack()
+            _this.props.navigation.state.params.onRestart({isSuccess: true});
+        })
+    }
+
+    getTrophy(left) {
+        return this.props.level * 3 + left * 2
+    }
+
+
     render() {
         var _this = this;
         const left = this.props.level * 2 - 1 - this.props.times
+        const { navigate } = this.props.navigation;
         const titleButtonConfig = (
             <View style={{alignItems: 'center', flexDirection: 'row', height: 120, paddingTop: 30}}>
                 <Text style={[styles.back, {color: left < this.props.level?'#ff3333':'#3333ff'}]}>{left} times left</Text>
@@ -31,15 +96,20 @@ class Home extends React.Component {
             <View style={{flex: 1}}>
                 <NavigationBar
                     style = {styles.navBar}
-                    title = {titleButtonConfig}
-                />
+                    title = {this.props.success?null:titleButtonConfig}
+                />                
                 <View style={styles.container}>
+                    <KeyboardAwareScrollView>
                     {
-                        this.props.success?
-                            <View>
-                                <Text style={styles.welcomeText}>Welcome to you!</Text>
-                                <Text style={styles.text}>{this.props.email}</Text>
-                                <Text style={styles.text}>{this.props.password}</Text>
+                        !this.props.success?
+                            <View style={styles.infoView}>
+                                <Text style={styles.numberText}>{this.props.navigation.state.params.number}</Text>
+                                <Text style={styles.welcomeText}>Congratulations!</Text>
+                                <Text style={styles.welcomeText}>You've guessed it</Text>
+                                <View style={{justifyContent: 'center', flexDirection: 'row', marginTop: 10}}>
+                                    <SimpleLineIcons name='trophy' size={32} style={{ color: 'white'}} />
+                                    <Text style={styles.welcomeText}>{this.getTrophy(left)}</Text>
+                                </View>
                             </View>
                         :left == 0?
                             <View style={styles.infoView}>
@@ -66,7 +136,7 @@ class Home extends React.Component {
                         :
                             <View style={styles.infoView}>
                                 <Text style={styles.numberText}>{this.props.navigation.state.params.number}</Text>
-                                <Text style={styles.welcomeText}>{notifyText[this.props.yNumber]}</Text>
+                                <Text style={styles.welcomeText}>{Global.notifyText[this.props.yNumber]}</Text>
                                 <Text style={styles.welcomeText}>Y {this.props.yNumber}, N {this.props.nNumber}</Text>
                                 <View>
                                     <Text style={styles.text}>'Y' means the number of the correct digits you guessed for both of the position and digit. </Text>
@@ -75,9 +145,68 @@ class Home extends React.Component {
                             </View>
 
                     }
-                    <View>
+                    <View style={{alignItems: 'center'}}>
                         {
-                            left == 0?
+                            this.state.register?
+                                <TextInput
+                                    style = {styles.textInput}
+                                    maxLength={20}
+                                    underlineColorAndroid='transparent'
+                                    onChangeText = {(Text) => this.setState({username: Text})}
+                                    value = {this.state.username}
+                                />
+                            :
+                            null
+                        }
+                        {
+                            !this.props.success && this.props.username.length != 0?
+                            <View>
+                            <Button 
+                                style = {styles.receiveButton}
+                                textStyle = {{color: 'red'}}
+                                isDisabled = {this.state.isReceiving}
+                                isLoading = {this.state.isReceiving}
+                                activityIndicatorColor = 'red'
+                                onPress = {() => {
+                                    this.onReceiveTrophy(left)
+                                }}>
+                                <View style={{flexDirection: 'row', justifyContent: 'center'}}>
+                                    <Text style = {[styles.buttonText, {color: 'red', fontFamily: 'gotham_bold'}]}>RECEIVE</Text>
+                                </View>
+                            </Button>
+                            </View>
+                            :!this.props.success?
+                            <View>
+                                <Button 
+                                    style = {styles.registerButton}
+                                    textStyle = {{color: 'blue'}}
+                                    isDisabled = {this.state.isRegistering}
+                                    isLoading = {this.state.isRegistering}
+                                    activityIndicatorColor = 'blue'
+                                    onPress = {() => {
+                                        if(this.state.username == '') this.setState({register: true})
+                                        else this.onRegister(left)
+                                    }}>
+                                    <View style={{flexDirection: 'row', justifyContent: 'center'}}>
+                                        <Text style = {styles.buttonText}>Register</Text>
+                                    </View>
+                                </Button>
+                                <Button 
+                                    style = {styles.unregisterButton}
+                                    textStyle = {{color: 'blue'}}
+                                    isDisabled = {this.state.isLoading}
+                                    isLoading = {this.state.isLoading}
+                                    activityIndicatorColor = 'blue'
+                                    onPress = {() => {
+                                        this.props.navigation.goBack()
+                                        this.props.navigation.state.params.onRestart({isSuccess: true});
+                                    }}>
+                                    <View style={{flexDirection: 'row', justifyContent: 'center'}}>
+                                        <Text style = {styles.buttonText}>Don't Register</Text>
+                                    </View>
+                                </Button>
+                            </View>
+                            :left == 0?
                             <Button 
                                 style = {styles.tryButton}
                                 textStyle = {{color: 'blue'}}
@@ -88,7 +217,7 @@ class Home extends React.Component {
                                     this.props.navigation.goBack()
                                     this.props.navigation.state.params.onRestart({isSuccess: false});
                                 }}>
-                                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                                <View style={{flexDirection: 'row', justifyContent: 'center'}}>
                                     <FontAwesome name='chevron-left' size={32} style={{ color: 'blue'}} />
                                     <Text style = {[styles.buttonText, {color: 'blue'}]}>Try again</Text>
                                 </View>
@@ -104,7 +233,7 @@ class Home extends React.Component {
                                     this.props.navigation.goBack()
                                     this.props.navigation.state.params.onRefresh({num: ''});
                                 }}>
-                                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                                <View style={{flexDirection: 'row', justifyContent: 'center'}}>
                                     <FontAwesome name='chevron-left' size={32} style={{ color: 'white'}} />
                                     <Text style = {styles.buttonText}>Back</Text>
                                 </View>
@@ -112,6 +241,7 @@ class Home extends React.Component {
                         }
                         
                     </View>
+                    </KeyboardAwareScrollView>
                 </View>
             </View>
         );
@@ -142,7 +272,7 @@ const styles = StyleSheet.create({
     },
     numberText: {
         color: 'white',
-        width: 200,
+        width: 250,
         fontSize: 60,
         fontFamily: null,
         textAlign: 'center',
@@ -184,8 +314,32 @@ const styles = StyleSheet.create({
         marginTop: 20,
         borderRadius: 70
     },
+    registerButton: {
+        backgroundColor: '#6666FFCC',
+        borderWidth: 0,
+        height: 70,
+        width: 280,
+        marginTop: 20,
+        borderRadius: 70
+    },
+    unregisterButton: {
+        backgroundColor: '#ff3333CC',
+        borderWidth: 0,
+        height: 70,
+        width: 280,
+        marginTop: 20,
+        borderRadius: 70
+    },
     tryButton: {
         backgroundColor: '#2db300',
+        borderWidth: 0,
+        height: 70,
+        width: 240,
+        marginTop: 20,
+        borderRadius: 70
+    },
+    receiveButton: {
+        backgroundColor: '#66ff33',
         borderWidth: 0,
         height: 70,
         width: 240,
@@ -204,6 +358,18 @@ const styles = StyleSheet.create({
         fontSize: 28,
         color: 'white',
     },
+    textInput: {
+        padding: 10,
+        height: 80,
+        width: 250,
+        borderWidth: 1,
+        borderColor: 'white',
+        borderRadius: 10,
+        textAlign: 'center',
+        fontSize: 30,
+        color: 'white',
+        marginTop: 20
+    },
 });
 
 function mapDispatchToProps(dispatch) {
@@ -218,6 +384,9 @@ export default connect((state) => {
         goal: state.goal,
         times: state.times,
         level: state.level,
-        history: state.history
+        history: state.history,
+        username: state.userName,
+        userId: state.userId,
+        trophy: state.userTrophy
     }
 }, mapDispatchToProps)(Home);

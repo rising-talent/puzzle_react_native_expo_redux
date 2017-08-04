@@ -5,35 +5,15 @@ import { bindActionCreators } from 'redux'
 import { ActionCreators } from '../redux/actions'
 import { NavigationActions } from 'react-navigation';
 import Button from 'apsl-react-native-button';
-import {Ionicons} from '@expo/vector-icons';
+import {Ionicons, SimpleLineIcons} from '@expo/vector-icons';
 import NavigationBar from 'react-native-navbar';
-import Storage from 'react-native-storage';
 import {Font} from 'expo'
 import { setCustomText } from 'react-native-global-props';
+import * as firebase from "firebase";
+import Spinner from 'react-native-loading-spinner-overlay';
 const dismissKeyboard = require('dismissKeyboard')
 var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
-var storage = new Storage({
-    // maximum capacity, default 1000  
-    size: 1000,
- 
-    // Use AsyncStorage for RN, or window.localStorage for web. 
-    // If not set, data would be lost after reload. 
-    storageBackend: AsyncStorage,
-    
-    // expire time, default 1 day(1000 * 3600 * 24 milliseconds). 
-    // can be null, which means never expire. 
-    defaultExpires: 1000 * 3600 * 24,
-    
-    // cache data in the memory. default is true. 
-    enableCache: true,
-    
-    // if data was not found in storage or expired, 
-    // the corresponding sync method will be invoked and return  
-    // the latest data. 
-    sync : {
-        // we'll talk about the details later. 
-    }
-})	
+
 
 class Login extends React.Component {
     static route={
@@ -46,31 +26,55 @@ class Login extends React.Component {
         super(props)
         this.state = {
             num: '',
+            fontLoaded: false
         }
     }
 
-    async componentDidMount() {
+    componentDidMount() {
+        const _this = this
+        this.setGlobalFontStyle()
+        this.setState({isLoading: true})
+        this.props.loadStorage('setting', (res) => {
+            if(res == 'error'){
+                _this.props.resetGoalNumber(4, false)  
+            }
+            else{
+                console.log(res.userid);
+                _this.props.setLevel(res.level)
+                _this.props.setComplexity(res.complexity)       
+                _this.props.resetGoalNumber(res.level, res.complexity)  
+            }            
+        })
+        this.props.loadStorage('account', (res) => {
+            if(res !== 'error' && res.userId.length > 0){                
+                _this.signIn(res)                
+                _this.props.setUserInfo(res)
+            } 
+            else{
+                this.setState({isLoading: false})
+            }
+        })
+    }
+
+    async signIn(res) {
+        const email = res.username + '@litiyan.com'
+        const pwd = 'passwordof' + res.username
+        let user = await firebase.auth().signInWithEmailAndPassword(email, pwd);
+        this.setState({isLoading: false})
+    }
+
+    async setGlobalFontStyle() {
         await Font.loadAsync({
             'gotham': require('../res/fonts/gotham.ttf'),
             'gotham_bold': require('../res/fonts/gotham_bold.ttf'),
         });
+        this.setState({fontLoaded: true})
         const customTextProps = { 
             style: { 
                 fontFamily: 'gotham'
             }
         }
         setCustomText(customTextProps);
-        const _this = this
-        storage.load({
-            key: 'setting',
-        }).then(ret => {
-            console.log(ret.userid);
-            _this.props.setLevel(ret.level)
-            _this.props.setComplexity(ret.complexity)       
-            _this.props.resetGoalNumber(ret.level, ret.complexity)     
-        }).catch(err => {
-            _this.props.resetGoalNumber(4, false)     
-        });
     }
 
     onChanged(data) {
@@ -80,21 +84,29 @@ class Login extends React.Component {
     render() {
         const titleButtonConfig = (
             <View style={{alignItems: 'center', justifyContent: 'center'}}>
-                <Text style={styles.navText}>{this.props.level} digits</Text>
+                <Text style={styles.navText}>{this.props.username == ''?'Welcome':this.props.username}</Text>
             </View>
         )
         const rightButtonConfig = (
-            <TouchableOpacity onPress={() => this.props.navigation.navigate('setting', {onChanged: (data) => this.onChanged(data)})} style={{alignItems: 'flex-end', width: 50, flexDirection: 'row'}}>
-                <Ionicons name='ios-settings-outline' size={32} style={{ color: 'white'}} />
+            <TouchableOpacity onPress={() => this.props.navigation.navigate('setting', {onChanged: (data) => this.onChanged(data)})} style={styles.rightNav}>
+                <SimpleLineIcons name='settings' size={25} style={{ color: 'white'}} />
             </TouchableOpacity>
+        )
+        const leftButtonConfig = (
+            <View style={styles.leftNav}>
+                <SimpleLineIcons name='trophy' size={25} style={{ color: 'white'}} />
+                <Text style={styles.trophyText}>{this.props.trophy}</Text>
+            </View>
         )
         if(this.state.num.length == this.props.level) dismissKeyboard()
         return (
             <View style={{flex: 1}}>
+                <Spinner visible = {this.state.isLoading && this.state.fontLoaded} textContent="" textStyle={{color: '#111'}} /> 
                 <NavigationBar
                     style = {styles.navBar}
                     title = {titleButtonConfig}
                     rightButton = {rightButtonConfig}
+                    leftButton = {leftButtonConfig}
                 />
                 <View style = {styles.container}>
                         <TextInput
@@ -155,12 +167,10 @@ class Login extends React.Component {
     }
 
     onRestart(data) {
+        this.props.resetGoalNumber(this.props.level, this.props.complexity)
+        this.setState({num: ''})
         if(data.isSuccess){
 
-        }
-        else{
-            this.props.resetGoalNumber(this.props.level, this.props.complexity)
-            this.setState({num: ''})
         }
     }
 
@@ -190,7 +200,7 @@ const styles = StyleSheet.create({
     },
 
     navText: {
-        fontSize: 20,
+        fontSize: 28,
         color: 'white',
         alignItems: 'center',
     },
@@ -242,8 +252,26 @@ const styles = StyleSheet.create({
     navBar: {
         backgroundColor: '#4d79ff', 
         marginTop: -20, 
-        height:60
+        height: 80
     },
+    trophyText: {
+        fontSize: 24,
+        color: 'white',
+        paddingBottom: 0,
+        paddingLeft: 5
+    },
+    rightNav: {
+        justifyContent: 'flex-end', 
+        alignItems: 'flex-end', 
+        paddingRight: 10, 
+        flexDirection: 'row'
+    },
+    leftNav: {
+        flexDirection: 'row', 
+        alignItems: 'flex-end',
+        paddingLeft: 10, 
+        justifyContent: 'flex-start'
+    }
 });
 
 function mapDispatchToProps(dispatch) {
@@ -257,6 +285,8 @@ export default connect((state) => {
         inProg: state.inProg,
         goal: state.goal,
         times: state.times,
-        history: state.history
+        history: state.history,
+        trophy: state.userTrophy,
+        username: state.userName
     }
 }, mapDispatchToProps)(Login);
