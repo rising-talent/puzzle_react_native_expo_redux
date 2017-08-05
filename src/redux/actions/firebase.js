@@ -9,13 +9,49 @@ firebase.initializeApp({
     messagingSenderId: "353547857908"
 });
 
-export const updateUserTrophy = (id, username, trophy, callback) => {
+export const updateUserTrophy = (user, callback) => {
     return (dispatch, getState) => {
-        let userPath = "/Trophy/" + id 
+        let userPath = "/Trophy/" + user.userId 
         callback(firebase.database().ref(userPath).update({
-            trophy: trophy,
-            username: username
+            trophy: user.trophy,
+            username: user.username,
+            email: user.email
         }))
+    }
+}
+
+export const getUserData = (id, callback) => {
+    return (dispatch, getState) => {
+        let userPath = "/Trophy/" + id
+        firebase.database().ref(userPath).on('value', (snapshot) => {
+            var Data = {}
+            if(snapshot.val()){
+                Data = snapshot.val()
+            }
+            callback(Data)
+        })
+    }
+}
+
+export const updateEmail = (data, callback) => {
+    return (dispatch, getState) => {
+        let userPath = "/Trophy/" + data.userId
+        firebase.database().ref(userPath).update(data)
+    }
+}
+
+export const deleteAccount = (data, callback) => {
+    return (dispatch, getState) => {
+        var user = firebase.auth().currentUser;
+        user.delete().then(function() {
+            // User deleted.
+            let userPath = "/Trophy/" + data.userId
+            firebase.database().ref(userPath).remove()
+            callback('Your account has been deleted successfully')
+        }).catch(function(error) {
+            // An error happened.
+            callback('It has already been deleted.')
+        });
     }
 }
 

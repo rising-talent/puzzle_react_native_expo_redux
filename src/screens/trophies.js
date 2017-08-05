@@ -18,15 +18,22 @@ class TrophyList extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
-            isPlayerLoading: true
+            isPlayerLoading: true,
+            selectedIndex: -1,
+            selectedUser: {}
         }
     }
 
     componentDidMount() {
-        const _this = this      
+        const _this = this
+        this.mount = true
         this.props.getTopPlayers((size) => {
-            _this.setState({isPlayerLoading: false})
+            _this.mount && _this.setState({isPlayerLoading: false})
         })
+    }
+
+    componentWillUnmount() {
+        this.mount = false
     }
 
     sendInvite() {
@@ -69,8 +76,8 @@ class TrophyList extends React.Component {
                 <NavigationBar
                     style = {styles.navBar}
                     title = {titleConfig}
-                    rightButton = {rightButtonConfig}
                     leftButton = {leftButtonConfig}
+                    rightButton = {this.state.selectedUser.email == undefined ? null : rightButtonConfig}
                 />
                 <View style={styles.container}>
                     <ListView 
@@ -78,18 +85,22 @@ class TrophyList extends React.Component {
                         dataSource = {ds.cloneWithRows(this.props.top_players)}
                         renderRow = {(rowData, sectionID, rowID, highlightRow) => {
                             return(
-                                <View key={rowID} style={[styles.listItem, {backgroundColor: colorArray[Math.floor(rowID / 10)]}]}>
+                                <TouchableOpacity onPress={() => this.setState({selectedIndex: rowID, selectedUser: rowData})} key={rowID} style={[styles.listItem, {backgroundColor: this.state.selectedIndex == rowID ? '#4d79ff' : colorArray[Math.floor(rowID / 10)]}]}>
+                                    <View>
                                     <View style={styles.listItemLeft}>
                                         <SimpleLineIcons name='trophy' size={25} style={{ color: 'white'}} />
                                         <Text style={styles.trophy}>{rowData.trophy}</Text>
-                                        <Text style={styles.name}>{rowData.username}</Text>
+                                        <Text style={[styles.name, {color: this.props.userInfo.username == rowData.username?'green':'white'}]}>{rowData.username}</Text>
+                                    </View>
                                     </View>
                                     <View>
                                         {
-
+                                            rowData.email !== undefined?
+                                            <SimpleLineIcons name='envelope' size={25} style={{ color: 'white'}} />
+                                            :null
                                         }
                                     </View>
-                                </View>
+                                </TouchableOpacity>
                             )
                         }
                     }>
@@ -111,29 +122,32 @@ const styles = StyleSheet.create({
         marginTop: -20,
         height: 80,
         paddingTop: 20,
+        borderBottomWidth: 1,
+        borderColor: 'white'
     },
     name: {
         height: 40,
         fontSize: 28,
-        color: 'white',
         fontFamily: 'gotham_bold',
-        paddingLeft: 20,
-        flex: 1
+        width: 180,
     },
     trophy: {
         height: 40,
         fontSize: 28,
         color: 'white',
         paddingLeft: 10,
-        width: 60
+        width: 80
     },
     listItem: {
+        height: 70,
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingTop: 30,
         paddingLeft: 20,
         paddingBottom: 5,
+        paddingRight: 20,
         borderBottomWidth: 1,
         borderColor: 'white'
     },
@@ -150,6 +164,7 @@ function mapDispatchToProps(dispatch) {
 
 export default connect((state) => { 
     return {
-        top_players: state.top_players
+        top_players: state.top_players,
+        userInfo: state.userInfo
     }
 }, mapDispatchToProps)(TrophyList);

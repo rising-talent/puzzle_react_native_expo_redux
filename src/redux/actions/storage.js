@@ -48,3 +48,11 @@ export const loadStorage = (key, callback) => {
         });
     }
 }
+
+export const formatKeyStorage = (key) => {
+    return (dispatch, getState) => {
+        storage.remove({
+            key: key
+        });
+    }
+}

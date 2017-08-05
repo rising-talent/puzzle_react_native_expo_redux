@@ -11,6 +11,7 @@ import {Font} from 'expo'
 import { setCustomText } from 'react-native-global-props';
 import * as firebase from "firebase";
 import Spinner from 'react-native-loading-spinner-overlay';
+import Toast, {DURATION} from 'react-native-easy-toast'
 const dismissKeyboard = require('dismissKeyboard')
 var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
 
@@ -26,14 +27,14 @@ class Login extends React.Component {
         super(props)
         this.state = {
             num: '',
-            fontLoaded: false
+            fontLoaded: false,
+            isLoading: true
         }
     }
 
     componentDidMount() {
         const _this = this
-        this.setGlobalFontStyle()
-        this.setState({isLoading: true})
+        this.setGlobalFontStyle()        
         this.props.loadStorage('setting', (res) => {
             if(res == 'error'){
                 _this.props.resetGoalNumber(4, false)  
@@ -47,8 +48,7 @@ class Login extends React.Component {
         })
         this.props.loadStorage('account', (res) => {
             if(res !== 'error' && res.userId.length > 0){                
-                _this.signIn(res)                
-                _this.props.setUserInfo(res)
+                _this.signIn(res)
             } 
             else{
                 this.setState({isLoading: false})
@@ -60,25 +60,38 @@ class Login extends React.Component {
         const email = res.username + '@litiyan.com'
         const pwd = 'passwordof' + res.username
         let user = await firebase.auth().signInWithEmailAndPassword(email, pwd);
-        this.setState({isLoading: false})
+        this.props.getUserData(user.uid, (data) => {
+            data['userId'] = user.uid
+            this.props.setUserInfo(data)
+            this.props.saveStorage('account', data, (res) => {
+            })
+            this.setState({isLoading: false})
+        })        
     }
 
     async setGlobalFontStyle() {
         await Font.loadAsync({
             'gotham': require('../res/fonts/gotham.ttf'),
             'gotham_bold': require('../res/fonts/gotham_bold.ttf'),
-        });
-        this.setState({fontLoaded: true})
+        });        
         const customTextProps = { 
             style: { 
                 fontFamily: 'gotham'
             }
         }
         setCustomText(customTextProps);
+        this.setState({fontLoaded: true})
+        this.refs.toast.show('Your account has been deleted successfully', DURATION.LENGTH_LONG);
     }
 
     onChanged(data) {
         this.props.resetGoalNumber(data.level, data.isComplex)     
+    }
+
+    onDeleted() {
+        const {level, complexity} = this.props
+        this.refs.toast.show('Your account has been deleted successfully', DURATION.LENGTH_LONG);
+        this.props.resetGoalNumber(level, complexity)   
     }
 
     showTrophyList() {
@@ -88,80 +101,100 @@ class Login extends React.Component {
     render() {
         const titleButtonConfig = (
             <View style={{alignItems: 'center', justifyContent: 'center'}}>
-                <Text style={styles.navText}>{this.props.username == ''?'Welcome':this.props.username}</Text>
+                <Text style={styles.navText}>{this.props.userInfo.username == ''?'Welcome':this.props.userInfo.username}</Text>
             </View>
         )
         const rightButtonConfig = (
-            <TouchableOpacity onPress={() => this.props.navigation.navigate('setting', {onChanged: (data) => this.onChanged(data)})} style={styles.rightNav}>
+            <TouchableOpacity onPress={() => this.props.navigation.navigate('setting', {onChanged: (data) => this.onChanged(data), onDeleted: () => this.onDeleted()})} style={styles.rightNav}>
                 <SimpleLineIcons name='settings' size={25} style={{ color: 'white'}} />
             </TouchableOpacity>
         )
         const leftButtonConfig = (
+            this.props.userInfo.username == ''?
+            null:
             <TouchableOpacity onPress={() => this.showTrophyList()} style={styles.leftNav}>
                 <SimpleLineIcons name='trophy' size={25} style={{ color: 'white'}} />
-                <Text style={styles.trophyText}>{this.props.trophy}</Text>
+                <Text style={styles.trophyText}>{this.props.userInfo.trophy}</Text>
             </TouchableOpacity>
         )
         if(this.state.num.length == this.props.level) dismissKeyboard()
         return (
             <View style={{flex: 1}}>
-                <Spinner visible = {this.state.isLoading || !this.state.fontLoaded} textContent="" textStyle={{color: '#111'}} /> 
-                <NavigationBar
-                    style = {styles.navBar}
-                    title = {titleButtonConfig}
-                    rightButton = {rightButtonConfig}
-                    leftButton = {leftButtonConfig}
-                />
-                <View style = {styles.container}>
-                        <TextInput
-                            style = {styles.textInput}
-                            maxLength={this.props.level}
-                            underlineColorAndroid='transparent'
-                            keyboardType = 'numeric'
-                            onChangeText = {(Text) => this.setState({num: Text})}
-                            value = {this.state.num}
+                {
+                    (this.state.isLoading || !this.state.fontLoaded)?
+                    <View style={styles.gifContainer}>
+                        <Image source={require('../res/svgs/loading.gif')} style={{width: 50, height: 50, backgroundColor: 'transparent'}}/>
+                    </View>
+                    :
+                    <View style={{flex: 1}}>
+                        <NavigationBar
+                            style = {styles.navBar}
+                            title = {titleButtonConfig}
+                            rightButton = {rightButtonConfig}
+                            leftButton = {leftButtonConfig}
                         />
-                        {
-                            this.props.inProg == 'yes'?
-                                <View style={styles.scrollView}>
-                                    <ListView 
-                                    enableEmptySections={true}
-                                        dataSource = {ds.cloneWithRows(this.props.history)}
-                                        renderRow = {(rowData, sectionID, rowID) => {
-                                            return(
-                                                <View key={rowID}>
-                                                    <Text style={styles.historyItem}>{rowData.number} : {rowData.state}</Text>
-                                                </View>
-                                            )
-                                        }
-                                    }>
-                                    </ListView>
-                                </View>
-                            :
-                            <Text style={styles.text}>
+                        <View style = {styles.container}>
+                                <TextInput
+                                    style = {styles.textInput}
+                                    maxLength={this.props.level}
+                                    underlineColorAndroid='transparent'
+                                    keyboardType = 'numeric'
+                                    onChangeText = {(Text) => this.setState({num: Text})}
+                                    value = {this.state.num}
+                                />
                                 {
-                                'Hi, I thought a random number of ' + this.props.level + ' digits. Now you must guess the number correclty by checking '
-                                + (this.props.level * 2 - 1) + " times at maximum. Let's get started!"
+                                    this.props.inProg == 'yes'?
+                                        <View style={styles.scrollView}>
+                                            <ListView 
+                                            enableEmptySections={true}
+                                                dataSource = {ds.cloneWithRows(this.props.history)}
+                                                renderRow = {(rowData, sectionID, rowID) => {
+                                                    return(
+                                                        <View key={rowID}>
+                                                            <Text style={styles.historyItem}>{rowData.number} : {rowData.state}</Text>
+                                                        </View>
+                                                    )
+                                                }
+                                            }>
+                                            </ListView>
+                                        </View>
+                                    :
+                                    <Text style={styles.text}>
+                                        {
+                                        'Hi, I thought a random number of ' + this.props.level + ' digits. Now you must guess the number correclty by checking '
+                                        + (this.props.level * 2 - 1) + " times at maximum. Let's get started!"
+                                        }
+                                    </Text>
                                 }
-                            </Text>
-                        }
-                        {
-                            this.state.num.length == this.props.level?
-                            <View>
-                                <Button 
-                                    style = {styles.button}
-                                    textStyle = {{color: 'white'}}
-                                    isDisabled = {this.state.isLoading}
-                                    isLoading = {this.state.isLoading}
-                                    activityIndicatorColor = 'yellow'
-                                    onPress = {() => this.checkNumber(this.state.num)}>
-                                    <Text style = {styles.buttonText}>Check</Text>
-                                </Button>
-                            </View>
-                            :
-                            null
-                        }                        
-                </View>
+                                {
+                                    this.state.num.length == this.props.level?
+                                    <View>
+                                        <Button 
+                                            style = {styles.button}
+                                            textStyle = {{color: 'white'}}
+                                            isDisabled = {this.state.isLoading}
+                                            isLoading = {this.state.isLoading}
+                                            activityIndicatorColor = 'yellow'
+                                            onPress = {() => this.checkNumber(this.state.num)}>
+                                            <Text style = {styles.buttonText}>Check</Text>
+                                        </Button>
+                                    </View>
+                                    :
+                                    null
+                                }                        
+                        </View>
+                        <Toast
+                            ref="toast"
+                            style={{backgroundColor:'red'}}
+                            position='bottom'
+                            positionValue={150}
+                            fadeInDuration={750}
+                            fadeOutDuration={1000}
+                            opacity={0.6}
+                            textStyle={{color:'white', fontSize: 20, textAlign: 'center'}}
+                        />
+                    </View>
+                }
             </View>
         );
     }
@@ -192,6 +225,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#4d79ff',
         paddingTop: 20,
         paddingBottom: 30,
+        alignItems: 'center'
+    },
+    gifContainer: {
+        flex: 1, 
+        backgroundColor: '#4d79ff',
+        justifyContent: 'center', 
         alignItems: 'center'
     },
 
@@ -290,7 +329,6 @@ export default connect((state) => {
         goal: state.goal,
         times: state.times,
         history: state.history,
-        trophy: state.userTrophy,
-        username: state.userName
+        userInfo: state.userInfo
     }
 }, mapDispatchToProps)(Login);

@@ -34,31 +34,15 @@ export const resetGoalNumber = (level, isComplex) => {
 
 export const setUserInfo = (info) => {
     return (dispatch, getState) => {
-        
-        dispatch(setUserID(info.userId))
-        dispatch(setUserName(info.username))
-        dispatch(setTrophy(info.trophy))
+        //alert(JSON.stringify(info))
+        dispatch(setUserData(info))
     }
 }
 
-export const setUserID = (id) => {
+export const setUserData = (data) => {
     return {
-        type: types.USER_ID,
-        data: id
-    }
-}
-
-export const setUserName = (name) => {
-    return {
-        type: types.USER_NAME,
-        data: name
-    }
-}
-
-export const setTrophy = (t) => {
-    return {
-        type: types.USER_TROPHY,
-        data: t
+        type: types.USER_INFO,
+        data
     }
 }
 

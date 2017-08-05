@@ -35,20 +35,8 @@ export const isComplex = createReducer(false, {
   },
 });
 
-export const userId = createReducer('', {
-  [types.USER_ID](state, action) {
-    return action.data
-  },
-});
-
-export const userName = createReducer('', {
-  [types.USER_NAME](state, action) {
-    return action.data
-  },
-});
-
-export const userTrophy = createReducer(0, {
-  [types.USER_TROPHY](state, action) {
+export const userInfo = createReducer({userId: '', trophy: 0, username: '', email: ''}, {
+  [types.USER_INFO](state, action) {
     return action.data
   },
 });

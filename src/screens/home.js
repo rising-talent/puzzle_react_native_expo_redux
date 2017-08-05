@@ -34,16 +34,18 @@ class Home extends React.Component {
             const email = username + '@litiyan.com'
             const pwd = 'passwordof' + username
             let user = await firebase.auth()
-                .createUserWithEmailAndPassword(email, pwd);     
+                .createUserWithEmailAndPassword(email, pwd);    
 
-            this.props.updateUserTrophy(user.uid, username, this.getTrophy(left), (res) => {
-                let userData = {
-                    userId: user.uid, 
-                    username: username, 
-                    trophy: _this.getTrophy(left)
-                }
+            let userData = {
+                userId: user.uid, 
+                username: username, 
+                trophy: _this.getTrophy(left),
+                email: this.props.userInfo.email
+            }
+            this.props.updateUserTrophy(userData, (res) => {
+                
                 _this.props.saveStorage('account', userData, (res) => {
-                    _this.setState({isRegistering: false})
+                    //_this.setState({isRegistering: false})
                 })
 
                 _this.props.setUserInfo(userData)
@@ -58,20 +60,15 @@ class Home extends React.Component {
 
     onReceiveTrophy(left) {
         const _this = this
-        const {userId, username, trophy} = this.props
-        const n_trophy = trophy + this.getTrophy(left)
+        const {userInfo} = this.props
         this.setState({isReceiving: true})
-        this.props.updateUserTrophy(userId, username, n_trophy, (res) => {
-            _this.setState({isReceiving: false})
-            let userData = {
-                userId: userId, 
-                username: username, 
-                trophy: n_trophy
-            }
-            _this.props.saveStorage('account', userData, (res) => {
-            })
+        const n_trophy = userInfo.trophy + this.getTrophy(left)       
+        userInfo['trophy'] = n_trophy
 
-            _this.props.setUserInfo(userData)
+        this.props.updateUserTrophy(userInfo, (res) => {            
+            _this.props.saveStorage('account', userInfo, (res) => {
+            })
+            _this.props.setUserInfo(userInfo)
             _this.props.navigation.goBack()
             _this.props.navigation.state.params.onRestart({isSuccess: true});
         })
@@ -150,6 +147,7 @@ class Home extends React.Component {
                                 <TextInput
                                     style = {styles.textInput}
                                     maxLength={20}
+                                    placeholder='Username'
                                     underlineColorAndroid='transparent'
                                     onChangeText = {(Text) => this.setState({username: Text})}
                                     value = {this.state.username}
@@ -158,7 +156,7 @@ class Home extends React.Component {
                             null
                         }
                         {
-                            !this.props.success && this.props.username.length != 0?
+                            !this.props.success && this.props.userInfo.username.length != 0?
                             <View>
                             <Button 
                                 style = {styles.receiveButton}
@@ -384,8 +382,6 @@ export default connect((state) => {
         times: state.times,
         level: state.level,
         history: state.history,
-        username: state.userName,
-        userId: state.userId,
-        trophy: state.userTrophy
+        userInfo: state.userInfo
     }
 }, mapDispatchToProps)(Home);
