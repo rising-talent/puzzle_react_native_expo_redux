@@ -81,21 +81,36 @@ class Login extends React.Component {
         }
         setCustomText(customTextProps);
         this.setState({fontLoaded: true})
-        this.refs.toast.show('Your account has been deleted successfully', DURATION.LENGTH_LONG);
     }
 
     onChanged(data) {
-        this.props.resetGoalNumber(data.level, data.isComplex)     
+        this.props.resetGoalNumber(data.level, data.isComplex)    
+        this.setState({num: ''}) 
     }
 
     onDeleted() {
         const {level, complexity} = this.props
         this.refs.toast.show('Your account has been deleted successfully', DURATION.LENGTH_LONG);
         this.props.resetGoalNumber(level, complexity)   
+        this.setState({num: ''}) 
     }
 
     showTrophyList() {
         this.props.navigation.navigate('trophylist', {})
+    }
+
+    onChangeText(Text) {
+        if(this.state.num.length > Text.length){
+            this.setState({num: Text})
+            return
+        }
+        let lastText = Text.substr(Text.length - 1, 1)
+        if(this.props.complexity){
+            this.setState({num: Text})
+        }
+        else if(this.state.num.indexOf(lastText) < 0){
+            this.setState({num: Text})
+        }
     }
     
     render() {
@@ -118,6 +133,7 @@ class Login extends React.Component {
             </TouchableOpacity>
         )
         if(this.state.num.length == this.props.level) dismissKeyboard()
+        console.log('LITIYAN_IN_PROGRESS', this.props.inProg)
         return (
             <View style={{flex: 1}}>
                 {
@@ -139,14 +155,14 @@ class Login extends React.Component {
                                     maxLength={this.props.level}
                                     underlineColorAndroid='transparent'
                                     keyboardType = 'numeric'
-                                    onChangeText = {(Text) => this.setState({num: Text})}
+                                    onChangeText = {(Text) => this.onChangeText(Text)}
                                     value = {this.state.num}
                                 />
                                 {
-                                    this.props.inProg == 'yes'?
+                                    this.props.inProg?
                                         <View style={styles.scrollView}>
                                             <ListView 
-                                            enableEmptySections={true}
+                                                enableEmptySections={true}
                                                 dataSource = {ds.cloneWithRows(this.props.history)}
                                                 renderRow = {(rowData, sectionID, rowID) => {
                                                     return(

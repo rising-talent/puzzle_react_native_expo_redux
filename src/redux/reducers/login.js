@@ -7,13 +7,13 @@ export const goal = createReducer('', {
   },
 });
 
-export const inProg = createReducer('no' , {
+export const inProg = createReducer(false , {
   [types.SET_GOAL_NUMBER](state, action) {
-    return 'no'
+    return false
   },
   [types.SET_TIMES](state, action) {
-    if(action.data == 0) return 'no'
-    else return 'yes'
+    if(action.data == 0) return false
+    else return true
   },
 });
 

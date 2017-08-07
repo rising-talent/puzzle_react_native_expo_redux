@@ -18,12 +18,16 @@ class Home extends React.Component {
         super(props)
         this.state = {
             register: false,
-            username: ''
+            username: '',
+            isFailed: false
         }
     }
 
     componentDidMount() {
         dismissKeyboard()
+        if(this.getLeftTimes() == 0){
+            this.onFail()
+        }
     }
 
     async onRegister(left) {
@@ -39,7 +43,7 @@ class Home extends React.Component {
             let userData = {
                 userId: user.uid, 
                 username: username, 
-                trophy: _this.getTrophy(left),
+                trophy: _this.getPTrophy(left),
                 email: this.props.userInfo.email
             }
             this.props.updateUserTrophy(userData, (res) => {
@@ -62,7 +66,7 @@ class Home extends React.Component {
         const _this = this
         const {userInfo} = this.props
         this.setState({isReceiving: true})
-        const n_trophy = userInfo.trophy + this.getTrophy(left)       
+        const n_trophy = userInfo.trophy + this.getPTrophy(left)       
         userInfo['trophy'] = n_trophy
 
         this.props.updateUserTrophy(userInfo, (res) => {            
@@ -74,14 +78,37 @@ class Home extends React.Component {
         })
     }
 
-    getTrophy(left) {
+    getPTrophy(left) {
         return this.props.level * 3 + left * 2
+    }
+
+    getMTrophy() {        
+        return 0 - this.props.level * 4
+    }
+
+    onFail() {
+        const _this = this
+        const {userInfo} = this.props
+        const n_trophy = userInfo.trophy + this.getMTrophy()
+        userInfo['trophy'] = n_trophy
+
+        this.props.updateUserTrophy(userInfo, (res) => {            
+            _this.props.saveStorage('account', userInfo, (res) => {
+                //
+            })
+            _this.props.setUserInfo(userInfo)
+            _this.setState({isFailed: true})
+        })
+    }
+
+    getLeftTimes() {
+        return this.props.level * 2 - 1 - this.props.times
     }
 
 
     render() {
         var _this = this;
-        const left = this.props.level * 2 - 1 - this.props.times
+        let left = this.getLeftTimes()
         const { navigate } = this.props.navigation;
         const titleButtonConfig = (
             <View style={{alignItems: 'center', flexDirection: 'row', height: 120, paddingTop: 30}}>
@@ -92,31 +119,35 @@ class Home extends React.Component {
             <View style={{flex: 1}}>
                 <NavigationBar
                     style = {styles.navBar}
-                    title = {this.props.success?null:titleButtonConfig}
+                    title = {this.props.success || left == 0?null:titleButtonConfig}
                 />                
                 <View style={styles.container}>
                     <KeyboardAwareScrollView>
                     {
-                        !this.props.success?
+                        this.props.success?
                             <View style={styles.infoView}>
                                 <Text style={styles.numberText}>{this.props.navigation.state.params.number}</Text>
                                 <Text style={styles.welcomeText}>Congratulations!</Text>
                                 <Text style={styles.welcomeText}>You've guessed it</Text>
                                 <View style={{justifyContent: 'center', flexDirection: 'row', marginTop: 10}}>
                                     <SimpleLineIcons name='trophy' size={32} style={{ color: 'white'}} />
-                                    <Text style={styles.welcomeText}>{this.getTrophy(left)}</Text>
+                                    <Text style={styles.welcomeText}>{this.getPTrophy(left)}</Text>
                                 </View>
                             </View>
                         :left == 0?
                             <View style={styles.infoView}>
                                 <View style={styles.infoView}>
-                                    <Text style={[styles.welcomeText, {color: '#666666'}]}>{this.props.navigation.state.params.number}</Text>
                                     <Text style={[styles.welcomeText, {color: '#666666'}]}>You are failed!</Text>
                                     <Text style={[styles.welcomeText, {fontSize: 28}]}>The goal number was</Text>
                                     <Text style={styles.welcomeText}>{this.props.goal}</Text>
+                                    <View style={{justifyContent: 'center', flexDirection: 'row', marginTop: 10}}>
+                                        <SimpleLineIcons name='trophy' size={32} style={{ color: 'white'}} />
+                                        <Text style={styles.welcomeText}>{this.getMTrophy()}</Text>
+                                    </View>
                                 </View>
                                 <View style={styles.scrollView}>
                                     <ListView 
+                                        enableEmptySections={true}
                                         dataSource = {ds.cloneWithRows(this.props.history)}
                                         renderRow = {(rowData, sectionID, rowID) => {
                                             return(
@@ -156,7 +187,7 @@ class Home extends React.Component {
                             null
                         }
                         {
-                            !this.props.success && this.props.userInfo.username.length != 0?
+                            this.props.success && this.props.userInfo.username.length != 0?
                             <View>
                             <Button 
                                 style = {styles.receiveButton}
@@ -172,7 +203,7 @@ class Home extends React.Component {
                                 </View>
                             </Button>
                             </View>
-                            :!this.props.success?
+                            :this.props.success?
                             <View>
                                 <Button 
                                     style = {styles.registerButton}
@@ -204,37 +235,41 @@ class Home extends React.Component {
                                 </Button>
                             </View>
                             :left == 0?
-                            <Button 
-                                style = {styles.tryButton}
-                                textStyle = {{color: 'blue'}}
-                                isDisabled = {this.state.isLoading}
-                                isLoading = {this.state.isLoading}
-                                activityIndicatorColor = 'blue'
-                                onPress = {() => {
-                                    this.props.navigation.goBack()
-                                    this.props.navigation.state.params.onRestart({isSuccess: false});
-                                }}>
-                                <View style={{flexDirection: 'row', justifyContent: 'center'}}>
-                                    <FontAwesome name='chevron-left' size={32} style={{ color: 'blue'}} />
-                                    <Text style = {[styles.buttonText, {color: 'blue'}]}>Try again</Text>
-                                </View>
-                            </Button>
+                            <View>
+                                <Button 
+                                    style = {styles.tryButton}
+                                    textStyle = {{color: 'blue'}}
+                                    isDisabled = {this.state.isLoading}
+                                    isLoading = {this.state.isLoading}
+                                    activityIndicatorColor = 'blue'
+                                    onPress = {() => {
+                                        this.props.navigation.goBack()
+                                        this.props.navigation.state.params.onRestart({isSuccess: false});
+                                    }}>
+                                    <View style={{flexDirection: 'row', justifyContent: 'center'}}>
+                                        <FontAwesome name='chevron-left' size={32} style={{ color: 'blue'}} />
+                                        <Text style = {[styles.buttonText, {color: 'blue'}]}>Try again</Text>
+                                    </View>
+                                </Button>
+                            </View>
                             :
-                            <Button 
-                                style = {styles.button}
-                                textStyle = {{color: 'white'}}
-                                isDisabled = {this.state.isLoading}
-                                isLoading = {this.state.isLoading}
-                                activityIndicatorColor = 'yellow'
-                                onPress = {() => {
-                                    this.props.navigation.goBack()
-                                    this.props.navigation.state.params.onRefresh({num: ''});
-                                }}>
-                                <View style={{flexDirection: 'row', justifyContent: 'center'}}>
-                                    <FontAwesome name='chevron-left' size={32} style={{ color: 'white'}} />
-                                    <Text style = {styles.buttonText}>Back</Text>
-                                </View>
-                            </Button>
+                            <View>
+                                <Button 
+                                    style = {styles.button}
+                                    textStyle = {{color: 'white'}}
+                                    isDisabled = {this.state.isLoading}
+                                    isLoading = {this.state.isLoading}
+                                    activityIndicatorColor = 'yellow'
+                                    onPress = {() => {
+                                        this.props.navigation.goBack()
+                                        this.props.navigation.state.params.onRefresh({num: ''});
+                                    }}>
+                                    <View style={{flexDirection: 'row', justifyContent: 'center'}}>
+                                        <FontAwesome name='chevron-left' size={32} style={{ color: 'white'}} />
+                                        <Text style = {styles.buttonText}>Back</Text>
+                                    </View>
+                                </Button>
+                            </View>
                         }
                         
                     </View>

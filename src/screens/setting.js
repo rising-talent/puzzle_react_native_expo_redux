@@ -189,6 +189,7 @@ class Setting extends React.Component {
                                         maxLength={40}
                                         placeholder='Input your email here'
                                         editable={!this.state.hideEmailAction}
+                                        keyboardType='email-address'
                                         underlineColorAndroid='transparent'
                                         onChangeText = {(Text) => this.setState({email: Text})}
                                         value = {this.state.email}
