@@ -29,6 +29,7 @@ export const resetGoalNumber = (level, isComplex) => {
         dispatch(setGoalNumber(gNumber))
         dispatch(setTimes(0))
         dispatch(setHistory([]))
+        dispatch(setSuccess(false))
     }
 }
 
@@ -60,6 +61,7 @@ export const check = (num, goal, times, history) => {
         dispatch(setY(Y))
         dispatch(setN(N))
         dispatch(setTimes(times + 1))
+        if(Y == 4) dispatch(setSuccess(true))
         let temp = {
             number: num,
             state: 'Y' + Y + ', ' + 'N' + N
@@ -87,6 +89,13 @@ export const setTimes = (t) => {
     return {
         type: types.SET_TIMES,
         data: t
+    }
+}
+
+export const setSuccess = (state) => {
+    return {
+        type: types.SUCCESS,
+        data: state
     }
 }
 

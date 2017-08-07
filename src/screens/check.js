@@ -13,7 +13,7 @@ import { KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view'
 const dismissKeyboard = require('dismissKeyboard')
 var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
 
-class Home extends React.Component {
+class Check extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
@@ -25,7 +25,7 @@ class Home extends React.Component {
 
     componentDidMount() {
         dismissKeyboard()
-        if(this.getLeftTimes() == 0){
+        if(!this.props.success && this.getLeftTimes() == 0){
             this.onFail()
         }
     }
@@ -64,10 +64,11 @@ class Home extends React.Component {
 
     onReceiveTrophy(left) {
         const _this = this
-        const {userInfo} = this.props
+        let {userInfo} = this.props
         this.setState({isReceiving: true})
         const n_trophy = userInfo.trophy + this.getPTrophy(left)       
         userInfo['trophy'] = n_trophy
+        alert(n_trophy)
 
         this.props.updateUserTrophy(userInfo, (res) => {            
             _this.props.saveStorage('account', userInfo, (res) => {
@@ -419,4 +420,4 @@ export default connect((state) => {
         history: state.history,
         userInfo: state.userInfo
     }
-}, mapDispatchToProps)(Home);
+}, mapDispatchToProps)(Check);

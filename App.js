@@ -7,15 +7,8 @@ import { createStore, applyMiddleware } from 'redux'
 import appReducer from './src/redux/reducers/index'
 import AppWithNavigationState from './src/screens/AppWithNavigationState'
 
-import Login from './src/screens/login'
-import Home from './src/screens/home'
+
 let store = createStore(appReducer, {}, applyMiddleware(thunkMiddleware))
-
-const Router = createRouter(() => ({
-  login: () => Login,
-  home: () => Home
-}))
-
 
 export default class App extends React.Component {
   render() {

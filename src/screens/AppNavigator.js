@@ -6,21 +6,21 @@ import {
   StackRouter
 } from 'react-navigation';
 
-import Login from './login'
-import Home from './home'
+import Main from './main'
+import Check from './check'
 import Setting from './setting'
 import TrophyList from './trophies'
 
 const AppNavigator = StackNavigator({
-  login: {
-    screen: Login,
+  main: {
+    screen: Main,
     navigationOptions: () => ({
-      title: 'Login Page',
+      title: 'Main Page',
     }),
   },
-  home: {
-    screen: Home,
-    title: 'Home page'
+  check: {
+    screen: Check,
+    title: 'Check page'
   },  
   setting: {
     screen: Setting,

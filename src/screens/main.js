@@ -16,10 +16,10 @@ const dismissKeyboard = require('dismissKeyboard')
 var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
 
 
-class Login extends React.Component {
+class Main extends React.Component {
     static route={
         navigationBar: {
-            title: 'Login page'
+            title: 'Main page'
         }
     }
 
@@ -230,8 +230,12 @@ class Login extends React.Component {
     checkNumber(num) {
         dismissKeyboard
         const { navigate } = this.props.navigation;
+        if(JSON.stringify(this.props.history).indexOf(num) >= 0){
+            alert('This number was already checked by you!')
+            return
+        }
         this.props.check(num, this.props.goal, this.props.times, this.props.history)
-        navigate('home', { onRefresh: this.onRefresh.bind(this), onRestart: this.onRestart.bind(this), number: this.state.num})
+        navigate('check', { onRefresh: this.onRefresh.bind(this), onRestart: this.onRestart.bind(this), number: this.state.num})
     }
 }
 
@@ -347,4 +351,4 @@ export default connect((state) => {
         history: state.history,
         userInfo: state.userInfo
     }
-}, mapDispatchToProps)(Login);
+}, mapDispatchToProps)(Main);

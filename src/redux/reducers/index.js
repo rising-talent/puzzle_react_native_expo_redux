@@ -1,11 +1,11 @@
 import { combineReducers } from 'redux';
-import * as homeReducer from './home'
-import * as loginReducer from './login'
+import * as checkReducer from './check'
+import * as mainReducer from './main'
 import * as trophyReducer from './trophies'
 
 const appReducer = combineReducers(Object.assign(
-  homeReducer,
-  loginReducer,
+  checkReducer,
+  mainReducer,
   trophyReducer
 ));
 

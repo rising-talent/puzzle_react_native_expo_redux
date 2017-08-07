@@ -8,8 +8,8 @@ export const AppState = createReducer('', {
 });
 
 export const success = createReducer(false, {
-  [types.SET_SUCCESS](state, action) {
-    return true
+  [types.SUCCESS](state, action) {
+    return action.data
   },
 });
 
